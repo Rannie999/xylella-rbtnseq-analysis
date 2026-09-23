@@ -1,0 +1,35 @@
+#!/usr/bin/Rscript
+
+usage = paste("",
+              "Usage: PosHeatmap.R netcdf4File scaffoldId begin end out_prefix",
+	      "    Given a netcdf4File that contains per-position average fitness values",
+	      "    and the region of the genome of interest, makes a heatmap and a table.",
+	      "    The table includes the per-position fitness values for strains within",
+	      "    that region (if any). The heatmap also shows the genes in this",
+	      "    neighborhood.",
+	      "", sep="\n");
+
+library("ncdf4");
+
+PosHeatmap = function(args = commandArgs(trailing=TRUE)) {
+	source(file.path(GetPath(), "NetCDFInterface_Functions.R"));
+
+	if (length(args) != 5) stop(usage);
+	filename = args[1];
+	scaffoldId = args[2];
+	begin = args[3];
+	end = args[4];
+	out_prefix = args[5];
+	
+}
+
+GetPath = function() {
+    argv = commandArgs(trailingOnly = FALSE)
+    dirname(substring(argv[grep("--file=", argv)], 8));
+}
+
+# Actually do the work
+if(!interactive()) {
+	PosHeatmap();
+	quit();
+}

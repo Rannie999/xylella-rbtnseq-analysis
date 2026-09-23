@@ -1,0 +1,36 @@
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+
+# Raw and intermediate experiment data
+*.poolcount
+fit_logratios.tab
+fit_t.tab
+*.fasta
+*.fna
+
+# Generated analysis directories and figures
+data/
+results/
+outputs/
+runs/
+analyses/
+summaries/
+barcode_qc/
+fit_analysis*/
+pairwise_ttest/
+gene_remap*/
+blastdb/
+*.png
+*.pdf
+
+# Local reproducible-analysis workspace; retain only its layout guide
+workspace/*
+!workspace/README.md

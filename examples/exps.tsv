@@ -1,0 +1,4 @@
+SetName	Index	Description	Date_pool_expt_started	Group
+example_set	T0-1	Time0 replicate 1	YYYY-MM-DD	Time0
+example_set	condition_A_rep1	Condition A replicate 1	YYYY-MM-DD	Condition
+example_set	condition_A_rep2	Condition A replicate 2	YYYY-MM-DD	Condition
