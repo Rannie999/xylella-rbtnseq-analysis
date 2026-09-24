@@ -35,34 +35,30 @@ def quality(feba):
     return tsv(path) if path.is_file() else []
 
 def barcode_metrics(run):
-    feba = run / "feba"; rows = tsv(feba / "all.poolcount")
-    if not rows: raise ValueError(f"No barcode rows in {feba / 'all.poolcount'}")
-    fields = {"barcode", "rcbarcode", "scaffold", "strand", "pos", "locusId", "f"}
-    samples = [col for col in rows[0] if col not in fields]
-    detected = [r for r in rows if any((number(r.get(c)) or 0) > 0 for c in samples)]
-    genic = [r for r in detected if r.get("locusId", "").strip()]
-    genes = {r["locusId"].strip() for r in genic}
-    time0 = {token(r.get("name", "")) for r in quality(feba)
-             if r.get("short", "").strip().lower() == "time0"}
-    time0.discard(None)
-    time0_barcodes = {r["barcode"] for r in detected if any(
-        (number(r.get(c)) or 0) > 0 and token(c) in time0 for c in samples)}
-    barcode_per, gene_per, reads_per, retention = [], [], [], []
-    for sample in samples:
-        present = [r for r in detected if (number(r.get(sample)) or 0) > 0]
-        barcode_per.append(len(present))
-        gene_per.append(len({r["locusId"].strip() for r in present if r.get("locusId", "").strip()}))
-        reads_per.append(sum(number(r.get(sample)) or 0 for r in present))
-        if token(sample) not in time0 and present and time0_barcodes:
-            retention.append(sum(r["barcode"] in time0_barcodes for r in present) / len(present))
+    """Aggregate the run's generated barcode-QC results.
+
+    This deliberately uses barcode_qc.py outputs so coverage, insertion, and
+    retention values have the same definitions in the per-sample and multi-run
+    reports.
+    """
+    qc = run / "analyses" / "barcode_qc"
+    sample_rows = list(csv.DictReader((qc / "sample_qc.csv").open(encoding="utf-8-sig", newline="")))
+    gene_rows = list(csv.DictReader((qc / "gene_qc.csv").open(encoding="utf-8-sig", newline="")))
+    if not sample_rows or not gene_rows:
+        raise ValueError(f"Missing or empty barcode-QC results in {qc}")
+    if len(sample_rows) != len(gene_rows):
+        raise ValueError(f"Sample and gene QC row counts differ in {qc}")
+
+    # Barcode-QC uses names beginning with T0 for the Time0 reference samples.
+    selected = [r for r in sample_rows if not r.get("sample", "").startswith("T0")]
+    retention_mean = mean([number(r.get("t0_barcode_retention_pct")) or 0 for r in selected])
     return {
-        "Samples": len(samples), "Detected barcodes": len(detected), "Detected genes": len(genes),
-        "Genic barcodes": len(genic), "Intergenic barcodes": len(detected) - len(genic),
-        "Mean barcodes per sample": round(mean(barcode_per) or 0, 2),
-        "Mean genes per sample": round(mean(gene_per) or 0, 2),
-        "Mean reads per sample": round(mean(reads_per) or 0, 2),
-        "Mean insertions per gene": round(len(genic) / len(genes), 2) if genes else "NA",
-        "Mean Time0 barcode retention": pct(round(10000 * (mean(retention) or 0)), 10000) if retention else "NA",
+        "Samples": len(sample_rows),
+        "Mean detected barcodes per sample": round(mean([number(r.get("detected_barcodes")) or 0 for r in sample_rows]) or 0, 2),
+        "Mean detected genes per sample": round(mean([number(r.get("detected_genes")) or 0 for r in gene_rows]) or 0, 2),
+        "Mean reads per sample": round(mean([number(r.get("total_reads")) or 0 for r in sample_rows]) or 0, 2),
+        "Mean insertions per gene": round(mean([number(r.get("mean_insertions_per_gene")) or 0 for r in gene_rows]) or 0, 2),
+        "Mean Time0 barcode retention": f"{retention_mean:.2f}%" if retention_mean is not None else "NA",
     }
 
 def fitness_metrics(run, threshold):
